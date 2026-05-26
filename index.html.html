@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulación: Comprá como Compras — Monroe Americana</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F4F6FB;color:#1E293B;min-height:100vh}
+.header{background:#0A1F44;color:#fff;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem}
+.header h1{font-size:17px;font-weight:500}
+.header span{font-size:12px;color:#0097A7;font-weight:500}
+.wrap{max-width:800px;margin:0 auto;padding:1.5rem 1rem 3rem}
+.progress{display:flex;gap:0;margin-bottom:1.5rem;border-radius:10px;overflow:hidden;border:1px solid #E2E8F0}
+.prog-step{flex:1;padding:.55rem .4rem;text-align:center;font-size:11px;font-weight:600;background:#fff;color:#94A3B8;border-right:1px solid #E2E8F0;cursor:default;transition:background .2s,color .2s}
+.prog-step:last-child{border-right:none}
+.prog-step.active{background:#0A1F44;color:#fff}
+.prog-step.done{background:#ECFDF5;color:#065F46}
+.phase{display:none}
+.phase.active{display:block}
+.card{background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:1.75rem;margin-bottom:1rem;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+h2{font-size:20px;font-weight:600;color:#0A1F44;margin-bottom:.4rem}
+h3{font-size:15px;font-weight:600;color:#0A1F44;margin-bottom:.75rem}
+.sub{font-size:13px;color:#64748B;margin-bottom:1.1rem;line-height:1.65}
+.scenario-map{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:1rem 0}
+@media(max-width:580px){.scenario-map{grid-template-columns:1fr 1fr}.role-grid{grid-template-columns:1fr 1fr}.metric-grid{grid-template-columns:1fr 1fr}.decision-grid{grid-template-columns:1fr}}
+.sc-card{border-radius:12px;padding:.9rem;text-align:center;cursor:pointer;border:2px solid transparent;transition:border-color .15s,transform .1s}
+.sc-card:hover{transform:translateY(-2px)}
+.sc-card.s1{background:#EFF6FF;border-color:#BFDBFE}
+.sc-card.s2{background:#F0FDF4;border-color:#BBF7D0}
+.sc-card.s3{background:#FFF7ED;border-color:#FED7AA}
+.sc-card.s4{background:#FDF4FF;border-color:#E9D5FF}
+.sc-card.selected.s1{border-color:#1565C0}
+.sc-card.selected.s2{border-color:#059669}
+.sc-card.selected.s3{border-color:#D97706}
+.sc-card.selected.s4{border-color:#7C3AED}
+.sc-icon{font-size:24px;margin-bottom:6px}
+.sc-icon.s1{color:#1565C0}.sc-icon.s2{color:#059669}.sc-icon.s3{color:#D97706}.sc-icon.s4{color:#7C3AED}
+.sc-title{font-size:12px;font-weight:700;color:#0A1F44;line-height:1.3}
+.sc-sub{font-size:11px;color:#64748B;margin-top:3px}
+.role-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:.75rem 0}
+.role-card{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:.75rem;text-align:center}
+.role-icon{font-size:22px;color:#1565C0;margin-bottom:4px}
+.role-name{font-size:12px;font-weight:600;color:#0A1F44}
+.role-desc{font-size:10px;color:#64748B;margin-top:2px;line-height:1.3}
+.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:.75rem 0}
+.metric{background:#F8FAFC;border-radius:10px;padding:.75rem;text-align:center}
+.metric-label{font-size:10px;color:#64748B;margin-bottom:3px}
+.metric-val{font-size:18px;font-weight:700;color:#0A1F44}
+.metric-val.red{color:#DC2626}
+.scenario-box{border-radius:10px;padding:1rem 1.25rem;margin:.85rem 0}
+.scenario-box.warn{background:#FFFBEB;border:1px solid #FCD34D}
+.scenario-box.blue{background:#EFF6FF;border:1px solid #BFDBFE}
+.scenario-box.green{background:#F0FDF4;border:1px solid #BBF7D0}
+.scenario-box.purple{background:#FDF4FF;border:1px solid #E9D5FF}
+.s-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+.warn .s-label{color:#92400E}.blue .s-label{color:#1E40AF}.green .s-label{color:#065F46}.purple .s-label{color:#5B21B6}
+.scenario-box p{font-size:13px;line-height:1.65}
+.warn p{color:#78350F}.blue p{color:#1E3A8A}.green p{color:#14532D}.purple p{color:#4C1D95}
+.timer-wrap{margin:.6rem 0}
+.timer-bar{height:6px;background:#E2E8F0;border-radius:3px;overflow:hidden}
+.timer-fill{height:100%;background:#1565C0;border-radius:3px;transition:width .5s linear,background .3s}
+.timer-fill.warn{background:#F59E0B}
+.timer-fill.danger{background:#EF4444}
+.timer-label{font-size:11px;color:#94A3B8;text-align:right;margin-top:3px}
+.decision-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:.85rem 0}
+.decision-card{background:#fff;border:1.5px solid #E2E8F0;border-radius:12px;padding:.9rem;cursor:pointer;transition:border-color .15s,background .12s}
+.decision-card:hover{border-color:#93C5FD;background:#F8FBFF}
+.decision-card.selected{border:2px solid #1565C0;background:#EFF6FF}
+.decision-card.valid{border:2px solid #059669;background:#F0FDF4}
+.decision-card.partial{border:2px solid #D97706;background:#FFFBEB}
+.decision-card.invalid{border:2px solid #DC2626;background:#FEF2F2}
+.d-title{font-size:12px;font-weight:700;color:#0A1F44;margin-bottom:3px}
+.d-desc{font-size:11px;color:#64748B;line-height:1.45}
+.btn-row{display:flex;gap:8px;justify-content:flex-end;margin-top:1.1rem;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:.55rem 1.1rem;border:1.5px solid #CBD5E1;border-radius:10px;background:#fff;cursor:pointer;font-size:13px;font-weight:500;color:#1E293B;transition:background .12s}
+.btn:hover{background:#F4F6FB}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.primary{background:#0A1F44;border-color:#0A1F44;color:#fff}
+.btn.primary:hover:not(:disabled){background:#1565C0;border-color:#1565C0}
+.btn.teal{background:#0097A7;border-color:#0097A7;color:#fff}
+.btn.teal:hover{background:#00818F}
+.reveal-box{border-radius:10px;padding:.9rem 1.1rem;margin:.6rem 0}
+.reveal-box.correct{background:#ECFDF5;border:1px solid #6EE7B7}
+.reveal-box.info{background:#EFF6FF;border:1px solid #93C5FD}
+.reveal-box.danger{background:#FEF2F2;border:1px solid #FCA5A5}
+.reveal-box.warn{background:#FFFBEB;border:1px solid #FCD34D}
+.r-title{font-size:12px;font-weight:700;margin-bottom:5px}
+.reveal-box.correct .r-title{color:#065F46}
+.reveal-box.info .r-title{color:#1E40AF}
+.reveal-box.danger .r-title{color:#991B1B}
+.reveal-box.warn .r-title{color:#92400E}
+.reveal-box p{font-size:12px;line-height:1.6}
+.reveal-box.correct p{color:#065F46}
+.reveal-box.info p{color:#1E40AF}
+.reveal-box.danger p{color:#7C2D12}
+.reveal-box.warn p{color:#78350F}
+.impact-row{display:flex;align-items:center;gap:10px;padding:.5rem 0;border-bottom:1px solid #F1F5F9}
+.impact-row:last-child{border-bottom:none}
+.impact-icon{font-size:16px;color:#64748B;width:20px;text-align:center;flex-shrink:0}
+.impact-text{font-size:12px;color:#1E293B;flex:1;line-height:1.4}
+.impact-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.badge-warn{background:#FEF3C7;color:#92400E}
+.badge-ok{background:#D1FAE5;color:#065F46}
+.badge-danger{background:#FEE2E2;color:#991B1B}
+.badge-info{background:#DBEAFE;color:#1E40AF}
+.answer-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:.75rem 0}
+@media(max-width:480px){.answer-grid{grid-template-columns:1fr}}
+.answer-item{border-radius:10px;padding:.75rem;font-size:12px;line-height:1.5}
+.answer-item .a-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.answer-item.valid{background:#ECFDF5;border:1px solid #6EE7B7}
+.answer-item.valid .a-tag{color:#065F46}
+.answer-item.valid p{color:#14532D}
+.answer-item.partial{background:#FFFBEB;border:1px solid #FCD34D}
+.answer-item.partial .a-tag{color:#92400E}
+.answer-item.partial p{color:#78350F}
+.answer-item.invalid{background:#FEF2F2;border:1px solid #FCA5A5}
+.answer-item.invalid .a-tag{color:#991B1B}
+.answer-item.invalid p{color:#7C2D12}
+.divider{height:1px;background:#F1F5F9;margin:1.25rem 0}
+.final-stats{background:#0A1F44;border-radius:14px;padding:1.25rem;margin:1rem 0;text-align:center}
+.final-stats .fs-title{font-size:12px;color:#0097A7;font-weight:700;margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.04em}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
+.stat-item .s-num{font-size:24px;font-weight:700;color:#fff}
+.stat-item .s-lbl{font-size:10px;color:#AECBF5;margin-top:2px}
+.scenario-selector{margin-bottom:1rem}
+.sel-title{font-size:13px;font-weight:600;color:#64748B;margin-bottom:.75rem;text-align:center}
+.nav-sc{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:1rem}
+.nav-btn{padding:.4rem .9rem;border-radius:8px;border:1.5px solid #E2E8F0;background:#fff;font-size:12px;font-weight:600;cursor:pointer;color:#64748B;transition:all .15s}
+.nav-btn.active{background:#0A1F44;border-color:#0A1F44;color:#fff}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><i class="ti ti-shopping-cart"></i>&nbsp; Simulación: Comprá como Compras</h1>
+  <span>Monroe Americana &nbsp;·&nbsp; Compras Abastecimiento</span>
+</div>
+
+<div class="wrap">
+
+<!-- progress bar -->
+<div class="progress" id="prog">
+  <div class="prog-step active" id="ps0">Inicio</div>
+  <div class="prog-step" id="ps1">Escenario</div>
+  <div class="prog-step" id="ps2">Decisión</div>
+  <div class="prog-step" id="ps3">Respuesta</div>
+  <div class="prog-step" id="ps4">Cierre</div>
+</div>
+
+<!-- ══════════ FASE 0: INTRO ══════════ -->
+<div class="phase active" id="ph0">
+  <div class="card">
+    <h2>Comprá como Compras</h2>
+    <p class="sub">Van a vivir lo que Compras gestiona todos los días. Hay 4 escenarios reales — elegí uno, tomá una decisión en tiempo real y descubrí cuántas variables hay detrás de cada compra.</p>
+    <div class="role-grid">
+      <div class="role-card"><div class="role-icon"><i class="ti ti-shopping-cart"></i></div><div class="role-name">Comprador</div><div class="role-desc">Decide qué y cuánto comprar</div></div>
+      <div class="role-card"><div class="role-icon"><i class="ti ti-coin"></i></div><div class="role-name">Finanzas</div><div class="role-desc">Controla el presupuesto semanal</div></div>
+      <div class="role-card"><div class="role-icon"><i class="ti ti-building-warehouse"></i></div><div class="role-name">Logística</div><div class="role-desc">Informa capacidad de recepción</div></div>
+      <div class="role-card"><div class="role-icon"><i class="ti ti-speakerphone"></i></div><div class="role-name">Comercial</div><div class="role-desc">Lanza una campaña inesperada</div></div>
+    </div>
+    <div class="metric-grid">
+      <div class="metric"><div class="metric-label">Presupuesto semanal</div><div class="metric-val">$500.000</div></div>
+      <div class="metric"><div class="metric-label">Stock actual</div><div class="metric-val">12 días</div></div>
+      <div class="metric"><div class="metric-label">Lead time proveedor</div><div class="metric-val">7 días</div></div>
+      <div class="metric"><div class="metric-label">Capacidad depósito</div><div class="metric-val">80%</div></div>
+    </div>
+    <div class="btn-row"><button class="btn primary" onclick="go(1)">Elegir escenario &nbsp;<i class="ti ti-arrow-right"></i></button></div>
+  </div>
+</div>
+
+<!-- ══════════ FASE 1: ELEGIR ESCENARIO ══════════ -->
+<div class="phase" id="ph1">
+  <div class="card">
+    <h3>¿Qué escenario enfrenta el grupo hoy?</h3>
+    <p class="sub">Cada escenario es una situación real del área. Elegí uno y tomá la decisión.</p>
+    <div class="scenario-map" id="scmap">
+      <div class="sc-card s1" onclick="pickSc(0,this)">
+        <div class="sc-icon s1"><i class="ti ti-clock"></i></div>
+        <div class="sc-title">Lead time y campaña urgente</div>
+        <div class="sc-sub">El tiempo no da</div>
+      </div>
+      <div class="sc-card s2" onclick="pickSc(1,this)">
+        <div class="sc-icon s2"><i class="ti ti-calendar-stats"></i></div>
+        <div class="sc-title">Preventa con volumen incierto</div>
+        <div class="sc-sub">No sabemos cuánto van a vender</div>
+      </div>
+      <div class="sc-card s3" onclick="pickSc(2,this)">
+        <div class="sc-icon s3"><i class="ti ti-coin"></i></div>
+        <div class="sc-title">Presupuesto corto y dos entregas</div>
+        <div class="sc-sub">La caja no alcanza para todo</div>
+      </div>
+      <div class="sc-card s4" onclick="pickSc(3,this)">
+        <div class="sc-icon s4"><i class="ti ti-tag"></i></div>
+        <div class="sc-title">Cambio de precios del proveedor</div>
+        <div class="sc-sub">La lista cambió y hay OC abierta</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="go(0)"><i class="ti ti-arrow-left"></i> Volver</button>
+      <button class="btn primary" id="bsc" disabled onclick="go(2)">Ir al escenario &nbsp;<i class="ti ti-arrow-right"></i></button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ FASE 2: DECISIÓN (dinámica) ══════════ -->
+<div class="phase" id="ph2">
+  <div class="card" id="dec-card">
+    <!-- se llena por JS -->
+  </div>
+</div>
+
+<!-- ══════════ FASE 3: RESPUESTA (dinámica) ══════════ -->
+<div class="phase" id="ph3">
+  <div class="card" id="rev-card">
+    <!-- se llena por JS -->
+  </div>
+</div>
+
+<!-- ══════════ FASE 4: CIERRE ══════════ -->
+<div class="phase" id="ph4">
+  <div class="card">
+    <h3>Lo que vivieron hoy</h3>
+    <div style="margin:.75rem 0">
+      <div class="impact-row"><div class="impact-icon"><i class="ti ti-clock"></i></div><div class="impact-text">El lead time no es negociable. La anticipación sí.</div><span class="impact-badge badge-warn">Escenario 1</span></div>
+      <div class="impact-row"><div class="impact-icon"><i class="ti ti-calendar-stats"></i></div><div class="impact-text">La preventa protege la caja cuando no se conoce el volumen real.</div><span class="impact-badge badge-info">Escenario 2</span></div>
+      <div class="impact-row"><div class="impact-icon"><i class="ti ti-coin"></i></div><div class="impact-text">Dos entregas + bajar otra compra = coordinar tres áreas al mismo tiempo.</div><span class="impact-badge badge-warn">Escenario 3</span></div>
+      <div class="impact-row"><div class="impact-icon"><i class="ti ti-tag"></i></div><div class="impact-text">Un cambio de precio tiene efecto dominó: OC, margen, precio de venta y caja.</div><span class="impact-badge badge-danger">Escenario 4</span></div>
+    </div>
+    <div class="final-stats">
+      <div class="fs-title">Esto es lo que gestiona Compras todos los días</div>
+      <div class="stats-row">
+        <div class="stat-item"><div class="s-num">212</div><div class="s-lbl">Proveedores</div></div>
+        <div class="stat-item"><div class="s-num">15.500</div><div class="s-lbl">Ítems activos</div></div>
+        <div class="stat-item"><div class="s-num">1.800.000</div><div class="s-lbl">Unidades / semana</div></div>
+      </div>
+    </div>
+    <div class="reveal-box info" style="margin-top:.75rem">
+      <div class="r-title"><i class="ti ti-bulb"></i> Para llevarse</div>
+      <p>Cada decisión de Compras cruza simultáneamente presupuesto, stock, lead time, capacidad de depósito, margen y relación con el proveedor. No es un área que procesa pedidos — es un área que gestiona el negocio.</p>
+    </div>
+    <div class="btn-row">
+      <button class="btn teal" onclick="reset()"><i class="ti ti-refresh"></i> Jugar de nuevo</button>
+      <button class="btn" onclick="go(1)"><i class="ti ti-layout-grid"></i> Otro escenario</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+var currentSc = -1;
+var timers = {};
+var chosen = null;
+
+/* ── SCENARIOS DATA ─────────────────────────────────────── */
+var scenarios = [
+
+  /* 0 — LEAD TIME */
+  {
+    color:'blue',
+    title:'Escenario 1 — Lead time y campaña urgente',
+    tag:'<i class="ti ti-clock"></i> Lead time',
+    situation:'Comercial confirma una campaña que arranca en <strong>5 días</strong>. El proveedor tiene lead time de <strong>7 días</strong>. El stock actual cubre <strong>3 días más</strong> de venta.',
+    question:'¿Qué hace el grupo?',
+    options:[
+      {id:'A',icon:'ti-shopping-cart',title:'A — Emitir OC y pedir urgencia',desc:'Pedirle al proveedor que acelere el envío y confiar que llega a tiempo.',type:'invalid'},
+      {id:'B',icon:'ti-transfer',title:'B — Transfer desde otra sucursal',desc:'Mover stock disponible de otro depósito para cubrir los 5 días mientras llega la OC.',type:'valid'},
+      {id:'C',icon:'ti-calendar',title:'C — Pedir a Comercial que postergue',desc:'La campaña arranca en 7 días cuando llegue el pedido. Sin riesgo de faltante.',type:'partial'},
+      {id:'D',icon:'ti-clock-pause',title:'D — Esperar y ver cómo evoluciona',desc:'Ver cómo baja el stock en los próximos días antes de decidir.',type:'invalid'}
+    ],
+    reveals:[
+      {type:'correct',title:'<i class="ti ti-check"></i> Mejor opción: B — Transfer interno + emitir OC',body:'El lead time hace imposible recibir mercadería antes de la campaña. El transfer cubre el corto plazo mientras la OC repone el stock. Ambas acciones van juntas.'},
+      {type:'info',title:'<i class="ti ti-info-circle"></i> C también es válida si Comercial acepta',body:'Postergar 2 días la campaña elimina el riesgo. Pero requiere que Comercial ceda — no siempre es posible. La decisión depende de la relación y la prioridad del negocio.'},
+      {type:'danger',title:'<i class="ti ti-x"></i> El problema de fondo',body:'Con 10 días de anticipación este problema no existe. El lead time del proveedor no cambia por urgencia. Compras trabaja con tiempos reales, no con los que cada área imagina.'},
+    ],
+    impacts:[
+      {icon:'ti-clock',text:'Lead time real: 7 días hábiles',badge:'badge-warn',label:'No modificable'},
+      {icon:'ti-transfer',text:'Transfer interno resuelve el corto plazo',badge:'badge-ok',label:'Inmediato'},
+      {icon:'ti-calendar',text:'Anticipación mínima recomendada: 10 días antes',badge:'badge-info',label:'Regla de oro'},
+    ]
+  },
+
+  /* 1 — PREVENTA */
+  {
+    color:'green',
+    title:'Escenario 2 — Preventa con volumen incierto',
+    tag:'<i class="ti ti-calendar-stats"></i> Preventa',
+    situation:'Comercial quiere lanzar una promo de un producto nuevo. Estiman vender entre <strong>500 y 2.000 unidades</strong> — no saben bien cuánto. El proveedor ofrece precio especial si comprás <strong>1.500 unidades esta semana</strong>. Si sobra stock, queda inmovilizado por 60 días.',
+    question:'¿Qué hace el grupo?',
+    options:[
+      {id:'A',icon:'ti-shopping-cart',title:'A — Comprar 1.500 unidades ya',desc:'Aprovechar el precio especial y asumir el riesgo de sobrestock si la venta es baja.',type:'partial'},
+      {id:'B',icon:'ti-calendar-stats',title:'B — Preventa con fecha de facturación',desc:'Acordar con el proveedor el precio hoy, pero facturar y entregar contra pedido real. No inmovilizás caja ni espacio.',type:'valid'},
+      {id:'C',icon:'ti-package',title:'C — Comprar solo 500 unidades',desc:'El mínimo estimado. Si la demanda supera, no hay stock para responder.',type:'partial'},
+      {id:'D',icon:'ti-x',title:'D — No comprar hasta tener certeza',desc:'Esperar datos reales de venta. El precio especial se pierde.',type:'invalid'}
+    ],
+    reveals:[
+      {type:'correct',title:'<i class="ti ti-check"></i> Mejor opción: B — Preventa con fecha de facturación',body:'La preventa te permite comprometer el precio y la disponibilidad con el proveedor sin inmovilizar caja ni espacio. Facturás y recibís contra pedido real. Es la herramienta ideal cuando el volumen es incierto.'},
+      {type:'warn',title:'<i class="ti ti-alert-triangle"></i> A y C son válidas pero con riesgo',body:'Comprar 1.500 asume riesgo de sobrestock. Comprar 500 asume riesgo de faltante. Ambas inmovilizán capital. La preventa evita los dos riesgos si el proveedor acepta la modalidad.'},
+      {type:'info',title:'<i class="ti ti-bulb"></i> Clave para negociar la preventa',body:'No todos los proveedores operan con preventa. Requiere una relación construida y confianza mutua. Por eso la gestión de proveedores de Compras es estratégica — no solo transaccional.'},
+    ],
+    impacts:[
+      {icon:'ti-coin',text:'Preventa: cero capital inmovilizado hasta confirmar la venta',badge:'badge-ok',label:'Ventaja'},
+      {icon:'ti-building-warehouse',text:'Espacio en depósito: sin ocupar hasta recibir pedido real',badge:'badge-ok',label:'Ventaja'},
+      {icon:'ti-handshake',text:'Requiere relación sólida con el proveedor para que acepte',badge:'badge-warn',label:'Condición'},
+    ]
+  },
+
+  /* 2 — PRESUPUESTO CORTO Y DOS ENTREGAS */
+  {
+    color:'warn',
+    title:'Escenario 3 — Presupuesto corto y dos entregas',
+    tag:'<i class="ti ti-coin"></i> Presupuesto',
+    situation:'El presupuesto semanal disponible es <strong>$440.000</strong>. La compra habitual semanal suma <strong>$510.000</strong>. Faltan <strong>$70.000</strong>. No se puede bajar el presupuesto ni esperar a la semana siguiente sin generar faltantes en productos clave.',
+    question:'¿Cómo resuelve el grupo la diferencia?',
+    options:[
+      {id:'A',icon:'ti-sort-descending',title:'A — Priorizar ABC y postergar C',desc:'Comprar los productos A y B esta semana ($440.000). Los tipo C, de baja rotación, se postergan a la semana siguiente sin riesgo de faltante.',type:'valid'},
+      {id:'B',icon:'ti-delivery',title:'B — Dos entregas con el proveedor',desc:'Negociar con el proveedor: primera entrega esta semana por $440.000, segunda entrega y facturación la semana siguiente por $70.000.',type:'valid'},
+      {id:'C',icon:'ti-arrow-up-circle',title:'C — Pedir excepción a Finanzas',desc:'Solicitar $70.000 adicionales de presupuesto para no frenar el abastecimiento.',type:'partial'},
+      {id:'D',icon:'ti-player-pause',title:'D — Frenar toda la compra semanal',desc:'Esperar a la semana siguiente con presupuesto completo. Riesgo de faltantes en productos A.',type:'invalid'}
+    ],
+    reveals:[
+      {type:'correct',title:'<i class="ti ti-check"></i> Dos opciones válidas: A y B — y lo ideal es combinarlas',body:'Priorizar por ABC garantiza que no faltan los productos críticos. Negociar dos entregas distribuye el impacto en caja. Usadas juntas son la solución más completa: primero los A esta semana, los B en segunda entrega, los C a la semana siguiente.'},
+      {type:'warn',title:'<i class="ti ti-alert-triangle"></i> C es válida pero no siempre disponible',body:'Pedir excepción a Finanzas funciona si hay margen en el presupuesto general. No es una herramienta recurrente. Usarla seguido desgasta la relación y la credibilidad del área.'},
+      {type:'danger',title:'<i class="ti ti-x"></i> D genera el problema que queremos evitar',body:'Frenar toda la compra para ahorrar $70.000 puede generar faltantes en productos A con alta rotación. El costo del faltante (ventas perdidas, urgencias) suele ser mayor que los $70.000 que se intentaron ahorrar.'},
+    ],
+    impacts:[
+      {icon:'ti-sort-descending',text:'ABC permite priorizar sin frenar lo crítico',badge:'badge-ok',label:'Herramienta propia'},
+      {icon:'ti-delivery',text:'Dos entregas distribuyen el impacto en caja sin faltantes',badge:'badge-ok',label:'Negociación'},
+      {icon:'ti-alert-triangle',text:'Frenar todo cuesta más que los $70.000 que se ahorran',badge:'badge-danger',label:'Riesgo alto'},
+    ]
+  },
+
+  /* 3 — CAMBIO DE PRECIOS */
+  {
+    color:'purple',
+    title:'Escenario 4 — Cambio de precios del proveedor',
+    tag:'<i class="ti ti-tag"></i> Cambio de precios',
+    situation:'El proveedor informa una actualización de lista con <strong>aumento del 12%</strong>. La lista entra en vigencia al momento de la entrega. Hay una <strong>OC abierta emitida al precio anterior</strong> por $200.000. El problema: si la entrega llega con el precio nuevo, el cliente que compró la promoción va a pagar más de lo acordado.',
+    question:'¿Qué hace el grupo?',
+    options:[
+      {id:'A',icon:'ti-file-invoice',title:'A — Recibir y pagar lo que facture el proveedor',desc:'Aceptar el nuevo precio en la factura aunque difiera de la OC emitida.',type:'invalid'},
+      {id:'B',icon:'ti-clock',title:'B — Acelerar la entrega antes del cambio',desc:'Pedir al proveedor que entregue antes de que llegue la mercadería al precio nuevo, protegiendo el precio de la promo ya comunicada al cliente.',type:'valid'},
+      {id:'C',icon:'ti-file-x',title:'C — Cancelar la OC y renegociar',desc:'Anular la orden actual y renegociar condiciones considerando el nuevo precio y el impacto en margen.',type:'valid'},
+      {id:'D',icon:'ti-tag',title:'D — Actualizar el precio de venta de inmediato',desc:'Reflejar el aumento en el precio al público antes de recibir la mercadería.',type:'invalid'}
+    ],
+    reveals:[
+      {type:'correct',title:'<i class="ti ti-check"></i> Dos opciones válidas: B y C según la situación',body:'Si el proveedor puede entregar antes del cambio, B protege el margen sin fricciones. Si no es posible, C es la salida: cancelar la OC, renegociar condiciones y evaluar si el negocio sigue siendo rentable al nuevo precio antes de comprometer caja.'},
+      {type:'danger',title:'<i class="ti ti-x"></i> A genera un desvío de precio sin control',body:'Recibir mercadería con una factura diferente a la OC emitida genera una diferencia de recepción que afecta el control de costos, la rentabilidad y el proceso de pago. Todo desvío entre OC y factura requiere gestión y aprobación — no se absorbe automáticamente.'},
+      {type:'warn',title:'<i class="ti ti-alert-triangle"></i> D tiene riesgo legal y comercial',body:'Actualizar el precio de venta antes de recibir la mercadería puede generar problemas con clientes y con la regulación de precios en medicamentos (ANMAT fija el PVP de Éticos). En OTC y Perfumería hay más flexibilidad, pero el cambio siempre debe hacerse con la lista oficial actualizada.'},
+      {type:'info',title:'<i class="ti ti-bulb"></i> El efecto dominó de un cambio de precios',body:'Lista actualizada → OC a revisar → margen recalculado → precio de venta a ajustar → impacto en presupuesto semanal. Compras coordina todo ese proceso con Finanzas y Comercial para que no haya sorpresas en ningún punto de la cadena.'},
+    ],
+    impacts:[
+      {icon:'ti-tag',text:'Aumento del 12% impacta directamente el margen de OTC (43% markup)',badge:'badge-danger',label:'Margen ajustado'},
+      {icon:'ti-file-invoice',text:'OC abierta al precio anterior: debe cancelarse o renegociarse',badge:'badge-warn',label:'Acción requerida'},
+      {icon:'ti-currency-dollar',text:'El precio de venta solo se actualiza con la lista oficial vigente',badge:'badge-info',label:'Control'},
+    ]
+  }
+];
+
+/* ── STATE ─────────────────────────────────────── */
+var currentSc = -1;
+var chosen = null;
+var timer = null;
+var timerSecs = 60;
+
+/* ── NAVIGATION ─────────────────────────────────────── */
+function go(n){
+  document.querySelectorAll('.phase').forEach(function(p){p.classList.remove('active')});
+  document.getElementById('ph'+n).classList.add('active');
+  updateProg(n);
+  if(n===2) buildDecision();
+  if(n===3) buildReveal();
+  window.scrollTo(0,0);
+}
+
+function updateProg(n){
+  var labels=['Inicio','Escenario','Decisión','Respuesta','Cierre'];
+  for(var i=0;i<5;i++){
+    var el=document.getElementById('ps'+i);
+    el.className='prog-step'+(i===n?' active':i<n?' done':'');
+  }
+}
+
+function pickSc(idx,el){
+  currentSc=idx;
+  chosen=null;
+  document.querySelectorAll('#scmap .sc-card').forEach(function(c){c.classList.remove('selected')});
+  el.classList.add('selected');
+  document.getElementById('bsc').disabled=false;
+}
+
+/* ── BUILD DECISION PHASE ─────────────────────────────────────── */
+function buildDecision(){
+  if(currentSc<0) return;
+  var sc=scenarios[currentSc];
+  var colorClass={'blue':'blue','green':'green','warn':'warn','purple':'purple'}[sc.color]||'blue';
+
+  var opts='';
+  sc.options.forEach(function(o){
+    opts+='<div class="decision-card" onclick="pickOpt(this,\''+o.id+'\')" id="opt'+o.id+'">';
+    opts+='<div class="d-title"><i class="ti '+o.icon+'"></i> '+o.title+'</div>';
+    opts+='<div class="d-desc">'+o.desc+'</div></div>';
+  });
+
+  document.getElementById('dec-card').innerHTML=
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem">'
+    +'<h3 style="margin:0">'+sc.tag+'</h3>'
+    +'<span style="font-size:12px;color:#94A3B8" id="tmrlbl">60 seg</span></div>'
+    +'<div class="timer-wrap"><div class="timer-bar"><div class="timer-fill" id="tmrfill" style="width:100%"></div></div></div>'
+    +'<div class="scenario-box '+colorClass+'"><div class="s-label"><i class="ti ti-alert-triangle"></i> Situación</div><p>'+sc.situation+'</p></div>'
+    +'<p class="sub" style="margin-top:.75rem">'+sc.question+'</p>'
+    +'<div class="decision-grid" id="optgrid">'+opts+'</div>'
+    +'<div class="btn-row">'
+    +'<button class="btn" onclick="go(1)"><i class="ti ti-arrow-left"></i> Volver</button>'
+    +'<button class="btn primary" id="bdec" disabled onclick="go(3)">Ver respuesta &nbsp;<i class="ti ti-arrow-right"></i></button>'
+    +'</div>';
+
+  startTimer();
+}
+
+function pickOpt(el,val){
+  chosen=val;
+  document.querySelectorAll('#optgrid .decision-card').forEach(function(c){c.classList.remove('selected')});
+  el.classList.add('selected');
+  document.getElementById('bdec').disabled=false;
+  if(timer) clearInterval(timer);
+}
+
+function startTimer(){
+  if(timer) clearInterval(timer);
+  var left=timerSecs;
+  timer=setInterval(function(){
+    left--;
+    var pct=Math.round((left/timerSecs)*100);
+    var fill=document.getElementById('tmrfill');
+    var lbl=document.getElementById('tmrlbl');
+    if(fill){fill.style.width=pct+'%';fill.className='timer-fill'+(left<=20?' warn':'')+(left<=10?' danger':'');}
+    if(lbl) lbl.textContent=left+' seg';
+    if(left<=0){
+      clearInterval(timer);
+      if(lbl) lbl.textContent='¡Tiempo!';
+      var btn=document.getElementById('bdec');
+      if(btn) btn.disabled=false;
+    }
+  },1000);
+}
+
+/* ── BUILD REVEAL PHASE ─────────────────────────────────────── */
+function buildReveal(){
+  if(currentSc<0) return;
+  var sc=scenarios[currentSc];
+
+  var revHtml='<h3>Respuesta — '+sc.tag+'</h3>';
+
+  // chosen option highlight
+  if(chosen){
+    var selOpt=sc.options.filter(function(o){return o.id===chosen})[0];
+    if(selOpt){
+      var typeLabel={'valid':'Correcta','partial':'Parcialmente válida','invalid':'Incorrecta'}[selOpt.type]||'';
+      var typeClass={'valid':'correct','partial':'warn','invalid':'danger'}[selOpt.type]||'info';
+      revHtml+='<div class="reveal-box '+typeClass+'" style="margin-bottom:.75rem">'
+        +'<div class="r-title">El grupo eligió: '+selOpt.title+' &nbsp;—&nbsp; '+typeLabel+'</div>'
+        +'<p>'+selOpt.desc+'</p></div>';
+    }
+  }
+
+  // all answers explained
+  revHtml+='<div class="answer-grid">';
+  sc.options.forEach(function(o){
+    var cls={'valid':'valid','partial':'partial','invalid':'invalid'}[o.type]||'info';
+    var tag={'valid':'Válida','partial':'Válida con condiciones','invalid':'No recomendada'}[o.type]||'';
+    revHtml+='<div class="answer-item '+cls+'">'
+      +'<div class="a-tag">'+tag+'</div>'
+      +'<p><strong>'+o.title.replace(/^[A-D] — /,'')+'</strong><br>'+o.desc+'</p></div>';
+  });
+  revHtml+='</div>';
+
+  // reveal boxes
+  sc.reveals.forEach(function(r){
+    revHtml+='<div class="reveal-box '+r.type+'"><div class="r-title">'+r.title+'</div><p>'+r.body+'</p></div>';
+  });
+
+  // impacts
+  revHtml+='<div style="margin:.75rem 0">';
+  sc.impacts.forEach(function(imp){
+    revHtml+='<div class="impact-row">'
+      +'<div class="impact-icon"><i class="ti '+imp.icon+'"></i></div>'
+      +'<div class="impact-text">'+imp.text+'</div>'
+      +'<span class="impact-badge '+imp.badge+'">'+imp.label+'</span>'
+      +'</div>';
+  });
+  revHtml+='</div>';
+
+  revHtml+='<div class="btn-row">'
+    +'<button class="btn" onclick="go(1)"><i class="ti ti-layout-grid"></i> Otro escenario</button>'
+    +'<button class="btn primary" onclick="go(4)">Ver cierre &nbsp;<i class="ti ti-arrow-right"></i></button>'
+    +'</div>';
+
+  document.getElementById('rev-card').innerHTML=revHtml;
+}
+
+/* ── RESET ─────────────────────────────────────── */
+function reset(){
+  currentSc=-1; chosen=null;
+  if(timer) clearInterval(timer);
+  document.querySelectorAll('#scmap .sc-card').forEach(function(c){c.classList.remove('selected')});
+  document.getElementById('bsc').disabled=true;
+  go(0);
+}
+</script>
+</body>
+</html>
